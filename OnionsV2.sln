@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.34902.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnionsV2", "OnionsV2\OnionsV2.csproj", "{F4CD6B73-C864-4909-B0F4-2D262FCE0452}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F4CD6B73-C864-4909-B0F4-2D262FCE0452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4CD6B73-C864-4909-B0F4-2D262FCE0452}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4CD6B73-C864-4909-B0F4-2D262FCE0452}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4CD6B73-C864-4909-B0F4-2D262FCE0452}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {414A87B5-A54A-4CE6-A35F-A5AAB600CCAA}
+	EndGlobalSection
+EndGlobal
