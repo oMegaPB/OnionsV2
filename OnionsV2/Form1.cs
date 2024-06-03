@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,7 +15,15 @@ namespace OnionsV2
     public partial class Form1 : Form
     {
         private int activePad = 1;
+        private int circlesAmount = 1;
+        private List<Label> speedLabels = new List<Label>();
+        private int usableScene = 1; // use label house or timer
         private Dictionary<string, bool> connections = new Dictionary<string, bool>();
+        private bool metricsEnabled = false;
+        private Thread timerLabelsThread = null;
+        private Thread pollingThread_ = null;
+        private SignalReader reader = new SignalReader();
+        private double time = 0.00;
         public Form1()
         {
             InitializeComponent();
@@ -73,10 +82,23 @@ namespace OnionsV2
             this.textBox1.Visible = false;
             this.button1.Visible = false;
             this.label5.Hide();
-            this.label6.Hide();
-            this.label7.Hide();
-            this.label8.Hide();
+            this.RoundedElement10.Hide();
+            this.RoundedElement11.Hide();
+            this.RoundedElement12.Hide();
             this.label9.Hide();
+            this.RoundedElement9.Hide();
+            this.label7.Hide();
+            this.button2.BackgroundImage = new Bitmap(Properties.Resources.house_white, button2.Width, button2.Height);
+            this.button2.Hide();
+            this.button3.BackgroundImage = new Bitmap(Properties.Resources.sekundomer_black, button3.Width, button3.Height);
+            this.button3.Hide();
+            this.RoundedElement13.Hide();
+            this.RoundedElement14.Hide();
+            this.button4.Hide();
+            this.button5.Hide();
+            this.button6.Hide();
+
+            this.label6.Hide();
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -153,6 +175,10 @@ namespace OnionsV2
 
         private void RoundedElement66_Click(object sender, EventArgs e)
         {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
             this.activePad = 1;
             this.BackgroundImage = new Bitmap(Properties.Resources._1background, this.Width, this.Height);
             this.GetControlByName("RoundedElement67").BackgroundImage = Properties.Resources.dark_blue;
@@ -173,14 +199,29 @@ namespace OnionsV2
             this.textBox1.Visible = false;
             this.button1.Visible = false;
             this.label5.Hide();
-            this.label6.Hide();
-            this.label7.Hide();
-            this.label8.Hide();
+            this.RoundedElement10.Hide();
+            this.RoundedElement11.Hide();
+            this.RoundedElement12.Hide();
             this.label9.Hide();
+            this.button2.Hide();
+            this.button3.Hide();
+            this.RoundedElement9.Hide();
+            this.label7.Hide();
+            this.RoundedElement13.Hide();
+            this.RoundedElement14.Hide();
+            this.button4.Hide();
+            this.button5.Hide();
+            this.button6.Hide();
+            this.disposeSpeedLabels();
+            this.label5.Size = new System.Drawing.Size(272, 43);
         }
 
         private void RoundedElement67_Click(object sender, EventArgs e)
         {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
             this.activePad = 2;
             this.BackgroundImage = new Bitmap(Properties.Resources._2background, this.Width, this.Height);
             this.RoundedElement66.BackgroundImage = Properties.Resources.dark_blue;
@@ -199,16 +240,32 @@ namespace OnionsV2
             this.RoundedElement8.Text = "Укажите расстояние от кольца в метрах:";
             this.label4.Visible = false;
             this.textBox1.Visible = true;
-            this.button1.Visible = true;
+            this.button1.Show();
+            this.label5.Text = "Результат в секундах: ";
             this.label5.Show();
-            this.label6.Show();
-            this.label7.Show();
-            this.label8.Show();
+            this.RoundedElement10.Show();
+            this.RoundedElement11.Show();
+            this.RoundedElement12.Show();
             this.label9.Show();
+            this.button2.Hide();
+            this.button3.Hide();
+            this.RoundedElement9.Hide();
+            this.label7.Hide();
+            this.RoundedElement13.Hide();
+            this.RoundedElement14.Hide();
+            this.button4.Hide();
+            this.button5.Hide();
+            this.button6.Hide();
+            this.disposeSpeedLabels();
+            this.label5.Size = new System.Drawing.Size(272, 43);
         }
 
         private void RoundedElement68_Click(object sender, EventArgs e)
         {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
             this.activePad = 3;
             this.BackgroundImage = new Bitmap(Properties.Resources._3background, this.Width, this.Height);
             this.GetControlByName("RoundedElement66").BackgroundImage = Properties.Resources.dark_blue;
@@ -228,12 +285,20 @@ namespace OnionsV2
             this.RoundedElement8.Text = $"Подключенные устройства: {cnt}";
             this.label4.Visible = false;
             this.textBox1.Visible = false;
-            this.button1.Visible = false;
-            this.label5.Hide();
-            this.label6.Hide();
-            this.label7.Hide();
-            this.label8.Hide();
+            this.button1.Show();
+            this.label5.Text = "Номер круга/время в секундах";
+                foreach (Control c in new Control[] {
+                this.RoundedElement10, this.RoundedElement11, this.RoundedElement12, this.RoundedElement13, this.RoundedElement14,
+                this.button4, this.button5, this.button6, this.label5
+            }) { if (this.usableScene == 2) { c.Hide(); } else { c.Show(); } }
             this.label9.Hide();
+            this.button2.Show();
+            this.button3.Show();
+            this.RoundedElement9.Show();
+            this.label7.Show();
+
+            this.disposeSpeedLabels();
+            this.label5.Size = new System.Drawing.Size(417, 43);
         }
 
         private void RoundedElement68_MouseEnter(object sender, EventArgs e)
@@ -307,7 +372,7 @@ namespace OnionsV2
                 Controls.Add(label);
                 label.BringToFront();
                 Button button = new Button();
-                button.BackColor = Color.FromArgb(240, 240, 240); ;
+                button.BackColor = Color.FromArgb(240, 240, 240);
                 button.Location = btn_loc;
                 btn_loc.Y += 42;
                 button.TabIndex = 5 + item.Key;
@@ -345,34 +410,319 @@ namespace OnionsV2
             ResumeLayout(false);
 
         }
-
+        private void pollingThread()
+        {
+            while (true)
+            {
+                byte[] buffer = this.reader.read(1);
+                string str = Encoding.Default.GetString(buffer);
+                this.renderNewSpeedLabel(Math.Round(this.time, 2).ToString());
+            }
+        }
+        
         private void button1_Click(object sender, EventArgs e)
         {
-            foreach (Control c in Controls)
+            this.disposeSpeedLabels();
+            if (this.metricsEnabled)
             {
-                if (c.Name == "textBox1")
+                if (this.timerLabelsThread != null)
                 {
-                    int val;
-                    try
+                    this.timerLabelsThread.Abort();
+                    this.RoundedElement10.BackColor = Color.White;
+                    this.RoundedElement10.ForeColor = Color.Black;
+                    this.RoundedElement11.BackColor = Color.White;
+                    this.RoundedElement11.ForeColor = Color.Black;
+                    this.RoundedElement12.BackColor = Color.White;
+                    this.RoundedElement12.ForeColor = Color.Black;
+                }
+                if (this.pollingThread_ != null)
+                {
+                    this.pollingThread_.Abort();
+                }
+                ((Button)sender).Text = "Начать";
+                this.metricsEnabled = false;
+                this.time = 0.00;
+                this.disposeSpeedLabels();
+                return;
+            }
+            ((Button)sender).Text = "Закончить";
+            this.metricsEnabled = true;
+            if (this.activePad == 2)
+            {
+                foreach (Control c in Controls)
+                {
+                    if (c.Name == "textBox1")
                     {
-                        val = int.Parse(c.Text);
-                    }
-                    catch (Exception)
-                    {
-                        MessageBox.Show("Что то пошло не так...");
+                        int val;
+                        try
+                        {
+                            val = int.Parse(c.Text);
+                        }
+                        catch (Exception)
+                        {
+                            MessageBox.Show("Что то пошло не так...");
+                            return;
+                        }
+                        MessageBox.Show($"Начинаю измерение с {val} метров");
+                        // логика измерения
+                        this.label9.Text = $"{val} Ceкунд";
                         return;
                     }
-                    MessageBox.Show($"Начинаю измерение с {val} метров");
-                    // логика измерения
-                    this.label9.Text = $"{val} Ceкунд";
-                    return;
+                }
+            }
+            ((Button)sender).Text = "Закончить";
+            this.metricsEnabled = true;
+            void InvokeColor(Control с, Color color, bool fore)
+            {
+                с.Invoke((MethodInvoker)delegate
+                {
+                    if (!fore)
+                    {
+                        с.BackColor = color;
+                    }
+                    else
+                    {
+                        с.ForeColor = color;
+                    }
+                });
+            }
+            void updateTimerLabels()
+            {
+                int step = 1;
+                while (true)
+                {
+                    if (step == 4)
+                    {
+                        Thread thread = new Thread(this.updateTimer);
+                        thread.Start();
+                        InvokeColor(this.RoundedElement12, Color.White, false);
+                        InvokeColor(this.RoundedElement12, Color.Black, true);
+                        return;
+                    }
+                    if (step == 1)
+                    {
+                        InvokeColor(this.RoundedElement10, Color.FromArgb(61, 82, 161), false);
+                        InvokeColor(this.RoundedElement10, Color.White, true);
+                        step = 2;
+                    }
+                    else if (step == 2)
+                    {
+                        InvokeColor(this.RoundedElement11, Color.FromArgb(61, 82, 161), false);
+                        InvokeColor(this.RoundedElement11, Color.White, true);
+                        InvokeColor(this.RoundedElement10, Color.White, false);
+                        InvokeColor(this.RoundedElement10, Color.Black, true);
+                        step = 3;
+                    }
+                    else if (step == 3)
+                    {
+                        InvokeColor(this.RoundedElement12, Color.FromArgb(61, 82, 161), false);
+                        InvokeColor(this.RoundedElement12, Color.White, true);
+                        InvokeColor(this.RoundedElement11, Color.White, false);
+                        InvokeColor(this.RoundedElement11, Color.Black, true);
+                        step = 4;
+                    }
+                    Thread.Sleep(1000);
+                }
+            }
+            Thread labelThread = new Thread(updateTimerLabels);
+            labelThread.Start();
+            this.timerLabelsThread = labelThread;
+            Thread pollingThread_ = new Thread(this.pollingThread);
+            pollingThread_.Start();
+            this.pollingThread_ = pollingThread_;
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
+            this.usableScene = 1;
+            foreach (Control c in new Control[] {
+                this.RoundedElement10, this.RoundedElement11, this.RoundedElement12, this.RoundedElement13, this.RoundedElement14,
+                this.button4, this.button5, this.button6, this.label5
+            }) { c.Show(); }
+            Button btn = (Button)sender;
+            btn.BackgroundImage = new Bitmap(Properties.Resources.house_white, btn.Width, btn.Height);
+            this.button3.BackgroundImage = new Bitmap(Properties.Resources.sekundomer_black, this.button3.Width, this.button3.Height);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
+            this.usableScene = 2;
+            foreach (Control c in new Control[] {
+                this.RoundedElement10, this.RoundedElement11, this.RoundedElement12, this.RoundedElement13, this.RoundedElement14,
+                this.button4, this.button5, this.button6, this.label5
+            }) { c.Hide(); }
+            Button btn = (Button)sender;
+            btn.BackgroundImage = new Bitmap(Properties.Resources.sekundomer_white, btn.Width, btn.Height);
+            this.button2.BackgroundImage = new Bitmap(Properties.Resources.house_black, this.button2.Width, this.button2.Height);
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
+            this.disposeSpeedLabels();
+            this.circlesAmount = 5;
+            button6.BackColor = Color.FromArgb(61, 82, 161);
+            button6.ForeColor = Color.White;
+            button5.BackColor = Color.White;
+            button5.ForeColor = Color.Black;
+            button4.BackColor = Color.White;
+            button4.ForeColor = Color.Black;
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
+            this.disposeSpeedLabels();
+            this.circlesAmount = 3;
+            button5.BackColor = Color.FromArgb(61, 82, 161);
+            button5.ForeColor = Color.White;
+            button6.BackColor = Color.White;
+            button6.ForeColor = Color.Black;
+            button4.BackColor = Color.White;
+            button4.ForeColor = Color.Black;
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            if (this.metricsEnabled)
+            {
+                return;
+            }
+            this.circlesAmount = 1;
+            button4.BackColor = Color.FromArgb(61, 82, 161);
+            button4.ForeColor = Color.White;
+            button5.BackColor = Color.White;
+            button5.ForeColor = Color.Black;
+            button6.BackColor = Color.White;
+            button6.ForeColor = Color.Black;
+        }
+
+        private void renderNewSpeedLabel(string text)
+        {
+            Point default_loc = new System.Drawing.Point(211, 338);
+            if (this.activePad == 3 && this.speedLabels.Count < this.circlesAmount)
+            {
+                default_loc.Y += 32 * this.speedLabels.Count;
+                Label label = new Label();
+                this.label6.Invoke((MethodInvoker)delegate
+                {
+                    label.AutoSize = false;
+                    label.Location = default_loc;
+                    label.Name = "DisposableSpeedLabels";
+                    label.Size = new System.Drawing.Size(272, 23);
+                    label.Text = $"№{this.speedLabels.Count + 1}/{text}";
+                    label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+                    label.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+                    this.Controls.Add(label);
+                    label.BringToFront();
+                    label.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, label.Width, label.Height, 30, 30));
+                });
+                this.speedLabels.Add(label);
+                if (this.speedLabels.Count == this.circlesAmount)
+                {
+                    this.label6.Invoke((MethodInvoker)delegate
+                    {
+                        this.label6.Show();
+                        this.calculateAvgTimeAndShowIt();
+                        this.button1.Text = "Начать";
+                    });
+                    this.metricsEnabled = false;
+                    if (this.timerLabelsThread != null)
+                    {
+                        this.timerLabelsThread.Abort();
+                    }
+                    if (this.pollingThread_ != null)
+                    {
+                        this.pollingThread_.Abort();
+                    }
+                    this.time = 0.00;
                 }
             }
         }
 
-        private void label8_Click(object sender, EventArgs e)
+        private void calculateAvgTimeAndShowIt()
         {
+            double total = 0.0;
+            int count = 0;
+            foreach (Label l in this.speedLabels)
+            {
+                string text = l.Text.Split('/')[1];
+                total += double.Parse(text);
+                count += 1;
+            }
+            this.label6.Text = $"Итоговое время: {total / (double)count} сек";
+            this.time = 0.00;
+        }
 
+        private void disposeSpeedLabels()
+        {
+            foreach (Label c in this.speedLabels)
+            {
+                c.Dispose();
+            }
+            this.speedLabels.Clear();
+            this.label6.Hide();
+            this.time = 0.00;
+        }
+
+        private void updateTimer()
+        {
+            while (true)
+            {
+                string str, after;
+                try
+                {
+                    this.time += 0.05;
+                    if (this.metricsEnabled)
+                    {
+                        str = Math.Round(this.time, 2).ToString();
+                        if (!str.Contains(","))
+                        {
+                            str = $"{str},00";
+                        } else
+                        {
+                            after = str.Split(',')[1];
+                            if (after.Length == 1)
+                            {
+                                str = $"{str}0";
+                            }
+                        }
+                        try
+                        {
+                            button1.Invoke((MethodInvoker)delegate {
+                                button1.Text = $"Закончить\n{str}";
+                            });
+                        } catch (InvalidAsynchronousStateException)
+                        {
+                            this.time = 0.00;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        this.time = 0.00;
+                        button1.Invoke((MethodInvoker)delegate {
+                            button1.Text = "Начать";
+                        });
+                        return;
+                    }
+                    Thread.Sleep(35);
+                } catch (InvalidOperationException) { return; }
+            }
         }
     }
 }

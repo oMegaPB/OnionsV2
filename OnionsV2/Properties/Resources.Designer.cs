@@ -123,6 +123,26 @@ namespace OnionsV2.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap house_black {
+            get {
+                object obj = ResourceManager.GetObject("house_black", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap house_white {
+            get {
+                object obj = ResourceManager.GetObject("house_white", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap image_10 {
             get {
                 object obj = ResourceManager.GetObject("image_10", resourceCulture);
@@ -156,6 +176,26 @@ namespace OnionsV2.Properties {
         internal static System.Drawing.Bitmap image_8 {
             get {
                 object obj = ResourceManager.GetObject("image_8", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sekundomer_black {
+            get {
+                object obj = ResourceManager.GetObject("sekundomer_black", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap sekundomer_white {
+            get {
+                object obj = ResourceManager.GetObject("sekundomer_white", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
