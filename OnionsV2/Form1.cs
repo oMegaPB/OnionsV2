@@ -323,7 +323,7 @@ namespace OnionsV2
                 this.ResumeLayout(false);
             }
         }
-        private Dictionary<int, string> GetCircles()
+        private Dictionary<int, bool> GetCircles()
         {
             this.com.write("getCircles");
             string circles;
@@ -338,7 +338,7 @@ namespace OnionsV2
             {
                 circles = "1" + circles;
             }
-            Dictionary<int, string> hashMap = new Dictionary<int, string>();
+            Dictionary<int, bool> hashMap = new Dictionary<int, bool>();
             foreach (string circle in circles.Split(';'))
             {
                 string[] values = circle.Split(':');
@@ -349,9 +349,9 @@ namespace OnionsV2
                 catch { break; }
                 if (!connections.ContainsKey(values[0]))
                 {
-                    connections.Add(values[0], true);
+                    connections.Add(values[0], values[1] == "on");
                 }
-                hashMap.Add(Convert.ToInt32(values[0]), "ESP2866");
+                hashMap.Add(Convert.ToInt32(values[0]), values[1] == "on");
             }
             return hashMap;
         }
@@ -371,7 +371,7 @@ namespace OnionsV2
         {
             Point point = new System.Drawing.Point(208, 84);
             Point btn_loc = new System.Drawing.Point(766, 84);
-            Dictionary<int, string> circles = GetCircles();
+            Dictionary<int, bool> circles = GetCircles();
             ResumeLayout(true);
             foreach (var item in circles)
             {
@@ -383,7 +383,7 @@ namespace OnionsV2
                 label.Size = new System.Drawing.Size(510, 33);
                 label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
                 label.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-                label.Text = $"№{item.Key}/{item.Value}";
+                label.Text = $"№{item.Key}/ESP2866";
                 label.Name = "DisposableESPS";
                 label.AutoSize = false;
                 Controls.Add(label);
@@ -397,7 +397,7 @@ namespace OnionsV2
                 button.TextAlign = ContentAlignment.MiddleCenter;
                 button.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 
-                bool value = connections.TryGetValue(item.Value, out var c);
+                bool value = connections.TryGetValue(Convert.ToString(item.Key), out var c);
                 if (c)
                 {
                     button.Text = "Выключить";
@@ -408,8 +408,8 @@ namespace OnionsV2
                 }
                 button.Name = "DisposableESPS";
                 button.Click += (s, e) => {
-                    connections.TryGetValue(item.Value, out var a);
-                    connections[item.Value] = !a;
+                    connections.TryGetValue(Convert.ToString(item.Key), out var a);
+                    connections[Convert.ToString(item.Key)] = !a;
                     if (a)
                     {
                         button.Text = "Включить";
@@ -486,11 +486,17 @@ namespace OnionsV2
                         catch (Exception)
                         {
                             MessageBox.Show("Что то пошло не так...");
+                            this.button1.Text = "Начать";
+                            this.metricsEnabled = false;
+                            this.time = 0.00;
                             return;
                         }
-                        MessageBox.Show($"Начинаю измерение с {val} метров");
+                        MessageBox.Show($"Было найдено только 1 кольцо. Для начала измерений необходимо минимум 2.");
                         // логика измерения
-                        this.label9.Text = $"{val} Ceкунд";
+                        // this.label9.Text = $"{val} Ceкунд";
+                        this.button1.Text = "Начать";
+                        this.metricsEnabled = false;
+                        this.time = 0.00;
                         return;
                     }
                 }
@@ -643,6 +649,7 @@ namespace OnionsV2
         private void renderNewSpeedLabel(string text)
         {
             Point default_loc = new System.Drawing.Point(211, 338);
+            this.time = 0.00;
             if (this.activePad == 3 && this.speedLabels.Count < this.circlesAmount)
             {
                 default_loc.Y += 32 * this.speedLabels.Count;
@@ -674,7 +681,6 @@ namespace OnionsV2
                     {
                         this.timerLabelsThread.Abort();
                     }
-                    this.time = 0.00;
                 }
             }
         }
@@ -689,7 +695,7 @@ namespace OnionsV2
                 total += double.Parse(text);
                 count += 1;
             }
-            this.label6.Text = $"Итоговое время: {total / (double)count} сек";
+            this.label6.Text = $"Итоговое время: {Math.Round(total / (double)count, 2)} сек";
             this.time = 0.00;
         }
 
@@ -746,6 +752,12 @@ namespace OnionsV2
                     Thread.Sleep(35);
                 } catch (InvalidOperationException) { return; }
             }
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.com.port.Close();
+            Environment.Exit(0);
         }
     }
 }
