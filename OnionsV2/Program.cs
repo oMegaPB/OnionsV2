@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Net.Sockets;
-using System.Net;
+using System.IO.Ports;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace OnionsV2
 {
@@ -22,34 +20,43 @@ namespace OnionsV2
         }
     }
 
-    public class SignalReader
+    class COM
     {
-        Socket reader = null;
-        Queue<byte[]> packets = new Queue<byte[]>();
-        public SignalReader()
+        public SerialPort port = null;
+        public Queue<string> packets = new Queue<string>();
+
+        public COM()
         {
-            this.reader = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-            try
+            foreach (string name in SerialPort.GetPortNames())
             {
-                this.reader.Connect(new IPEndPoint(ipAddress, 26789));
-            }
-            catch
-            {
-                MessageBox.Show("Refused");
-                System.Environment.Exit(1);
+                Console.WriteLine(name);
+                try
+                {
+                    this.port = new SerialPort(name, 115200);
+                    this.port.Open();
+                    this.port.ReadTimeout = 500;
+                    this.write("hello");
+                    string recv = this.read();
+                    if (recv.StartsWith("hi"))
+                    {
+                        return;
+                    }
+                }
+                catch { }
             }
         }
-        public byte[] read(int n)
+        public string read()
         {
-            byte[] buffer = new byte[n];
-            if (this.reader != null)
-            {
-                this.reader.Receive(buffer);
-                return buffer;
-            }
-            return null;
+            byte[] buffer = new byte[16];
+            this.port.Read(buffer, 0, 16);
+            return System.Text.Encoding.UTF8.GetString(buffer);
 
+        }
+
+        public void write(string text)
+        {
+            this.port.Write(text);
+            Thread.Sleep(100);
         }
     }
 }

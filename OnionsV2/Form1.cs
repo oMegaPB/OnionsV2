@@ -21,8 +21,7 @@ namespace OnionsV2
         private Dictionary<string, bool> connections = new Dictionary<string, bool>();
         private bool metricsEnabled = false;
         private Thread timerLabelsThread = null;
-        private Thread pollingThread_ = null;
-        private SignalReader reader = new SignalReader();
+        private COM com = new COM();
         private double time = 0.00;
         public Form1()
         {
@@ -99,6 +98,8 @@ namespace OnionsV2
             this.button6.Hide();
 
             this.label6.Hide();
+            Thread pollingThread_ = new Thread(this.pollingThread);
+            pollingThread_.Start();
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -241,7 +242,7 @@ namespace OnionsV2
             this.label4.Visible = false;
             this.textBox1.Visible = true;
             this.button1.Show();
-            this.label5.Text = "Результат в секундах: ";
+            this.label5.Text = "Результат в м/с: ";
             this.label5.Show();
             this.RoundedElement10.Show();
             this.RoundedElement11.Show();
@@ -324,17 +325,33 @@ namespace OnionsV2
         }
         private Dictionary<int, string> GetCircles()
         {
-            Dictionary<int, string> hashMap = new Dictionary<int, string>();
-            List<string> names = new List<string>(new string[] { "ESP2866", "ESP2867", "ESP2868", "ESP2869" });
-            int cnt = 1;
-            foreach (string name in names)
+            this.com.write("getCircles");
+            string circles;
+            try
             {
-                if (!connections.ContainsKey(name))
+                circles = this.com.read();
+            } catch (TimeoutException)
+            {
+                circles = this.com.packets.First();
+            }
+            if (!circles.StartsWith("1"))
+            {
+                circles = "1" + circles;
+            }
+            Dictionary<int, string> hashMap = new Dictionary<int, string>();
+            foreach (string circle in circles.Split(';'))
+            {
+                string[] values = circle.Split(':');
+                try
                 {
-                    connections.Add(name, true);
+                    Convert.ToInt32(values[0]);
                 }
-                hashMap.Add(cnt, name);
-                cnt += 1;
+                catch { break; }
+                if (!connections.ContainsKey(values[0]))
+                {
+                    connections.Add(values[0], true);
+                }
+                hashMap.Add(Convert.ToInt32(values[0]), "ESP2866");
             }
             return hashMap;
         }
@@ -396,12 +413,12 @@ namespace OnionsV2
                     if (a)
                     {
                         button.Text = "Включить";
-                        // Логика Выключения кольца
+                        this.com.write($"{item.Key}:on");
                     }
                     else
                     {
                         button.Text = "Выключить";
-                        // Логика Включения кольца
+                        this.com.write($"{item.Key}:off");
                     }
                 };
                 Controls.Add(button);
@@ -414,9 +431,22 @@ namespace OnionsV2
         {
             while (true)
             {
-                byte[] buffer = this.reader.read(1);
-                string str = Encoding.Default.GetString(buffer);
-                this.renderNewSpeedLabel(Math.Round(this.time, 2).ToString());
+                try
+                {
+                    string prolet = this.com.read();
+                    if (prolet.EndsWith("prolet"))
+                    {
+                        if (this.activePad == 3)
+                        {
+                            this.renderNewSpeedLabel(Math.Round(this.time, 2).ToString());
+                        }
+                    } else
+                    {
+                        this.com.packets.Enqueue(prolet);
+                    }
+
+                } catch { }
+                Thread.Sleep(100);
             }
         }
         
@@ -435,14 +465,9 @@ namespace OnionsV2
                     this.RoundedElement12.BackColor = Color.White;
                     this.RoundedElement12.ForeColor = Color.Black;
                 }
-                if (this.pollingThread_ != null)
-                {
-                    this.pollingThread_.Abort();
-                }
-                ((Button)sender).Text = "Начать";
+                this.button1.Text = "Начать";
                 this.metricsEnabled = false;
                 this.time = 0.00;
-                this.disposeSpeedLabels();
                 return;
             }
             ((Button)sender).Text = "Закончить";
@@ -524,12 +549,16 @@ namespace OnionsV2
                     Thread.Sleep(1000);
                 }
             }
-            Thread labelThread = new Thread(updateTimerLabels);
-            labelThread.Start();
-            this.timerLabelsThread = labelThread;
-            Thread pollingThread_ = new Thread(this.pollingThread);
-            pollingThread_.Start();
-            this.pollingThread_ = pollingThread_;
+            if (this.usableScene == 2)
+            {
+                Thread thread = new Thread(this.updateTimer);
+                thread.Start();
+            } else
+            {
+                Thread labelThread = new Thread(updateTimerLabels);
+                labelThread.Start();
+                this.timerLabelsThread = labelThread;
+            }
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -645,10 +674,6 @@ namespace OnionsV2
                     {
                         this.timerLabelsThread.Abort();
                     }
-                    if (this.pollingThread_ != null)
-                    {
-                        this.pollingThread_.Abort();
-                    }
                     this.time = 0.00;
                 }
             }
@@ -708,8 +733,6 @@ namespace OnionsV2
                             });
                         } catch (InvalidAsynchronousStateException)
                         {
-                            this.time = 0.00;
-                            return;
                         }
                     }
                     else
